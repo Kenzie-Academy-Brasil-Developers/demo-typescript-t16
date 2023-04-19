@@ -1,4 +1,5 @@
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ILoginFormData } from "../components/LoginForm";
 import { IRegisterFormData } from "../components/RegisterForm";
 import { api } from "../services/api";
@@ -9,45 +10,100 @@ interface IUserProviderProps {
 }
 
 //Descreve o value do provider e associado no objeto vazio como parâmetro do createContext
-interface IUserContext{
-    userLogin: (formData: ILoginFormData) => Promise<void>;
-    userRegister: (formData: IRegisterFormData) => Promise<void>;
-}    
+interface IUserContext {
+   user: IUser | null;
+   userLogin: (formData: ILoginFormData, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => Promise<void>;
+   userRegister: (formData: IRegisterFormData, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => Promise<void>;
+   userLogout: () => void;
+}
 
+interface IUser {
+   email: string;
+   name: string;
+   job: string;
+   id: number;
+}
+
+interface IUserLoginResponse {
+   accessToken: string;
+   user: IUser;
+}
+
+interface IUserRegisterResponse {
+   accessToken: string;
+   user: IUser;
+}
 
 export const UserContext = createContext({} as IUserContext);
 
-/*
-"accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpvaG5kb2VAZW1haWwuY29tIiwiaWF0IjoxNjgxMjI2MzU1LCJleHAiOjE2ODEyMjk5NTUsInN1YiI6IjIifQ.HoHzAjg6luV9k6v8zHyewSTHsUnAKDBIbFiIS0r_joM",
-	"user": {
-		"email": "johndoe@email.com",
-		"name": "John Doe",
-		"job": "Jornalista",
-		"id": 1
-	}
-    */
- 
 export const UserProvider = ({ children }: IUserProviderProps) => {
-   const [user, setUser] = useState(null);
+   const [user, setUser] = useState<IUser | null>(null);
 
-   const userLogin = async (formData: ILoginFormData) => {
+   useEffect(() => {
+      const token = localStorage.getItem("@TOKEN");
+      const userId = localStorage.getItem("@USERID");
+
+      const userAutoLogin = async () => {
+         try {
+            const {data} = await api.get<IUser>(`/users/${userId}`, {
+               headers: {
+                  Authorization: `Bearer ${token}`
+               }
+            })
+            setUser(data);
+            navigate('/home');
+         } catch (error) {
+            console.log(error);
+            localStorage.removeItem("@TOKEN");
+            localStorage.removeItem("@USERID");
+         }
+      }
+
+      if(token && userId){
+         userAutoLogin();
+      }
+   }, [])
+
+   const navigate = useNavigate();
+   
+
+   const userLogin = async (formData: ILoginFormData, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => {
       try {
-         const { data } = await api.post("/login", formData);
+         setLoading(true);
+         const { data } = await api.post<IUserLoginResponse>("/login", formData);
          localStorage.setItem("@TOKEN", data.accessToken);
+         localStorage.setItem("@USERID", JSON.stringify(data.user.id));
          setUser(data.user);
+         navigate("/home");
       } catch (error) {
          console.log(error);
+      } finally {
+         setLoading(false);
       }
    };
 
-   const userRegister = async (formData: IRegisterFormData) => { 
+   const userRegister = async (formData: IRegisterFormData, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => {
       try {
-        await api.post("/users", formData);
-        console.log("Cadastro efetuado com sucesso");
+         setLoading(true);
+         await api.post<IUserRegisterResponse>("/users", formData);
+         console.log("Cadastro efetuado com sucesso");
       } catch (error) {
          console.log(error);
-      }    
+      } finally {
+         setLoading(false);
+      }
    };
 
-   return <UserContext.Provider value={{ userLogin, userRegister }}>{children}</UserContext.Provider>;
+   const userLogout = () => {
+      localStorage.removeItem("@TOKEN");
+      localStorage.removeItem("@USERID");
+      setUser(null);
+      navigate("/");
+   };
+
+   return (
+      <UserContext.Provider value={{ user, userLogin, userRegister, userLogout }}>
+         {children}
+      </UserContext.Provider>
+   );
 };
