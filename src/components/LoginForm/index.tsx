@@ -5,29 +5,29 @@
 }
 */
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useContext, useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form"
 import { UserContext } from "../../providers/UserContext";
 import { Input } from "../Input";
-
-export interface ILoginFormData{
-    email: string;
-    password: string;
-}
+import { loginFormSchema, TLoginFormValues } from "./loginFormSchema";
 
 export const LoginForm = () => {
     const [loading, setLoading] = useState(false);
     const { userLogin } = useContext(UserContext);
-    const { register, handleSubmit, formState: { errors } } = useForm<ILoginFormData>();
+    const { register, handleSubmit, formState: { errors } } = useForm<TLoginFormValues>({
+        resolver: zodResolver(loginFormSchema)
+    });
 
-    const submit: SubmitHandler<ILoginFormData> = (formData) => {
+    const submit: SubmitHandler<TLoginFormValues> = (formData) => {
         userLogin(formData, setLoading);
     }
 
     return(
         <form onSubmit={handleSubmit(submit)}>
-            <Input type="email" register={register("email")} disabled={loading} />            
-            <Input type="password" register={register("password")} disabled={loading} />
+            <Input  type="email" {...register("email")} disabled={loading} error={errors.email}/>
+            <Input type="password" {...register("password")} disabled={loading} error={errors.password} />
+
             <button type="submit" disabled={loading}>
                 {loading ? 'Entrando...' : 'Entrar'}
             </button>

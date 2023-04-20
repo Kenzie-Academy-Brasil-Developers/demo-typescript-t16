@@ -1,7 +1,7 @@
 import { createContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ILoginFormData } from "../components/LoginForm";
-import { IRegisterFormData } from "../components/RegisterForm";
+import { TLoginFormValues } from "../components/LoginForm/loginFormSchema";
+import { TRegisterFormValues } from "../components/RegisterForm/registerFormSchema";
 import { api } from "../services/api";
 
 //tipo mais apropriado para descrever objetos (interface)
@@ -12,8 +12,8 @@ interface IUserProviderProps {
 //Descreve o value do provider e associado no objeto vazio como parâmetro do createContext
 interface IUserContext {
    user: IUser | null;
-   userLogin: (formData: ILoginFormData, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => Promise<void>;
-   userRegister: (formData: IRegisterFormData, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => Promise<void>;
+   userLogin: (formData: TLoginFormValues, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => Promise<void>;
+   userRegister: (formData: TRegisterFormValues, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => Promise<void>;
    userLogout: () => void;
 }
 
@@ -67,7 +67,7 @@ export const UserProvider = ({ children }: IUserProviderProps) => {
    const navigate = useNavigate();
    
 
-   const userLogin = async (formData: ILoginFormData, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => {
+   const userLogin = async (formData: TLoginFormValues, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => {
       try {
          setLoading(true);
          const { data } = await api.post<IUserLoginResponse>("/login", formData);
@@ -82,7 +82,7 @@ export const UserProvider = ({ children }: IUserProviderProps) => {
       }
    };
 
-   const userRegister = async (formData: IRegisterFormData, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => {
+   const userRegister = async (formData: TRegisterFormValues, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => {
       try {
          setLoading(true);
          await api.post<IUserRegisterResponse>("/users", formData);

@@ -1,29 +1,36 @@
-//import { ForwardedRef, forwardRef } from "react"
-import { UseFormRegisterReturn } from "react-hook-form";
+import { ForwardedRef, forwardRef, InputHTMLAttributes } from "react";
+import { FieldError } from "react-hook-form";
 
-interface IInputProps{
-    type: "text" | "email" | "number" | "password" | "search";
+interface IInputProps extends InputHTMLAttributes<HTMLInputElement>{
     label?: string;
-    disabled?: boolean;
-    register: UseFormRegisterReturn<string>;
-}
+    error?: FieldError;
+} 
 
-export const Input = ({type, label, disabled, register}: IInputProps) => {
-    return(
-        <div>
-            {label ? <label>{label}</label> : null}
-            <input type={type} disabled={disabled} {...register} />
-        </div>
-    )
-}
+export const Input = forwardRef(({label, error, ...rest}: IInputProps, ref: ForwardedRef<HTMLInputElement>) => (
+    <div>
+        {label ? <label>{label}</label> : null}
+        <input ref={ref} {...rest} />
+        {error ? <p>{error.message}</p> : null}
+    </div>
+))
 
 /*
-export const Input = forwardRef(({type, label, disabled, ...rest}: IInputProps, ref: ForwardedRef<HTMLInputElement>) => {
+interface IInputProps{
+    label?: string;
+    error?: FieldError;
+    type: "text" | "number" | "email" | "password";
+    placeholder?: string;
+    register: UseFormRegisterReturn<string>;
+    disabled?: boolean;
+}
+
+export const Input = ({label, error, type, placeholder, register, disabled}: IInputProps) => {
     return(
         <div>
-            {label ? <label>{label}</label> : null}
-            <input type={type} ref={ref} disabled={disabled} {...rest} />
-        </div>
+        {label ? <label>{label}</label> : null}
+        <input type={type} placeholder={placeholder} disabled={disabled} {...register} />
+        {error ? <p>{error.message}</p> : null}
+    </div>
     )
-})
+}
 */
